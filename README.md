@@ -6,7 +6,6 @@ Spike is a package for [Laravel](https://laravel.com/) allowing you to easily se
 
 - **[Official website](https://spike.opcodes.io)**
 - **[Documentation](https://spike.opcodes.io/docs)**
-- **[Purchase a license](https://checkout.unlock.sh/spike)**
 
 ## Testing
 
