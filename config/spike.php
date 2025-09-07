@@ -135,6 +135,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Process soft-deleted carts
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, webhook handlers will process carts that have been
+    | soft-deleted. This can be useful when carts are deleted during
+    | checkout abandonment but webhooks arrive after the user completes
+    | payment. When disabled, webhooks will only process active carts.
+    |
+    */
+
+    'process_soft_deleted_carts' => false,
+
+    /*
+    |--------------------------------------------------------------------------
     | Subscriptions
     |--------------------------------------------------------------------------
     |

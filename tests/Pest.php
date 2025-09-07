@@ -122,3 +122,75 @@ function createPaddleTransactionWebhookEvent(string $type, array $data): \Larave
         'data' => $data,
     ]);
 }
+
+function createPaddleTransactionPaidWebhookEvent(\Opcodes\Spike\Cart $cart, array $productQuantities = []): \Laravel\Paddle\Events\WebhookHandled
+{
+    $currency = config('cashier.currency', 'USD');
+    $items = collect($productQuantities)
+        ->map(fn($quantity, $productId) => [
+            'price_id' => \Opcodes\Spike\Facades\Spike::findProduct($productId)->payment_provider_price_id,
+            'quantity' => $quantity,
+        ])
+        ->filter(fn($item) => $item['quantity'] > 0)
+        ->values()
+        ->map(fn($productQuantity) => [
+            'price' => [
+                'id' => $productQuantity['price_id'],
+                'unit_price' => [
+                    'amount' => $productQuantity['unit_price'] ?? 0,
+                    'currency_code' => $currency,
+                ],
+            ],
+            'price_id' => $productQuantity['price_id'],
+            'quantity' => $productQuantity['quantity'],
+        ]);
+    $total = $items->sum(function ($item) {
+        return intval($item['price']['unit_price']['amount'] * $item['quantity']);
+    });
+
+    return createPaddleTransactionWebhookEvent('transaction.paid', [
+        'id' => 'txn_01hn2b49xz6g0zjqv5ysv229fd',
+        'billed_at' => now()->toRfc3339String(),
+        'customer_id' => $cart->billable->customer->paddle_id,
+        'items' => $items->toArray(),
+        'currency_code' => $currency,
+        'status' => 'paid',
+        'details' => [
+            'totals' => [
+                'total' => (string) $total,
+                'grand_total' => (string) $total,
+            ],
+        ],
+        'custom_data' => [
+            'spike_cart_id' => $cart->id,
+        ],
+    ]);
+}
+
+function createPaddleTransactionUpdatedWebhookEvent(\Opcodes\Spike\Cart $cart, array $productQuantities = [], string $status = 'ready'): \Laravel\Paddle\Events\WebhookHandled
+{
+    $items = collect($productQuantities)
+        ->map(fn($quantity, $productId) => [
+            'price_id' => \Opcodes\Spike\Facades\Spike::findProduct($productId)->payment_provider_price_id,
+            'quantity' => $quantity,
+        ])
+        ->filter(fn($item) => $item['quantity'] > 0)
+        ->values()
+        ->map(fn($productQuantity) => [
+            'price' => [
+                'id' => $productQuantity['price_id'],
+            ],
+            'price_id' => $productQuantity['price_id'],
+            'quantity' => $productQuantity['quantity'],
+        ]);
+
+    return createPaddleTransactionWebhookEvent('transaction.updated', [
+        'id' => 'txn_01hn2b49xz6g0zjqv5ysv229fd',
+        'customer_id' => $cart->billable->customer->paddle_id,
+        'items' => $items->toArray(),
+        'status' => $status,
+        'custom_data' => [
+            'spike_cart_id' => $cart->id,
+        ]
+    ]);
+}

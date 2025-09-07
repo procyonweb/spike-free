@@ -40,13 +40,13 @@ it('handles transaction updated event and manages quantity', function () {
         ]), 'items')
         ->create();
 
-    $webhookEvent = createTransactionUpdatedWebhookEvent($cart, ['standard' => 2]);
+    $webhookEvent = createPaddleTransactionUpdatedWebhookEvent($cart, ['standard' => 2]);
     $listener = new PaddleEventListener();
     $listener->handle($webhookEvent);
 
     expect($cart->fresh()->items->first()->quantity)->toBe(2);
 
-    $webhookEvent = createTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
+    $webhookEvent = createPaddleTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
     $listener->handle($webhookEvent);
 
     expect($cart->fresh()->items->first()->quantity)->toBe(1);
@@ -62,7 +62,7 @@ it('handles transaction updated event and removed deleted products from the cart
         ), 'items')
         ->create();
 
-    $webhookEvent = createTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
+    $webhookEvent = createPaddleTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
     $listener = new PaddleEventListener();
     $listener->handle($webhookEvent);
 
@@ -80,7 +80,7 @@ it('assigns the transaction ID to the cart', function () {
         ]), 'items')
         ->create();
 
-    $webhookEvent = createTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
+    $webhookEvent = createPaddleTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
     $listener = new PaddleEventListener();
     $listener->handle($webhookEvent);
 
@@ -96,7 +96,7 @@ it('does not call Spike::resolve()', function () {
             'quantity' => 1
         ]), 'items')
         ->create();
-    $webhookEvent = createTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
+    $webhookEvent = createPaddleTransactionUpdatedWebhookEvent($cart, ['standard' => 1]);
     $resolveCalled = false;
     Spike::resolve(function ($request) use (&$resolveCalled) {
         $resolveCalled = true;
@@ -108,30 +108,3 @@ it('does not call Spike::resolve()', function () {
     $this->assertFalse($resolveCalled, 'Spike::resolve() should not be called');
 });
 
-function createTransactionUpdatedWebhookEvent(Cart $cart, array $productQuantities = []): WebhookHandled
-{
-    $items = collect($productQuantities)
-        ->map(fn($quantity, $productId) => [
-            'price_id' => Spike::findProduct($productId)->payment_provider_price_id,
-            'quantity' => $quantity,
-        ])
-        ->filter(fn($item) => $item['quantity'] > 0)
-        ->values()
-        ->map(fn($productQuantity) => [
-            'price' => [
-                'id' => $productQuantity['price_id'],
-            ],
-            'price_id' => $productQuantity['price_id'],
-            'quantity' => $productQuantity['quantity'],
-        ]);
-
-    return createPaddleTransactionWebhookEvent('transaction.updated', [
-        'id' => 'txn_01hn2b49xz6g0zjqv5ysv229fd',
-        'customer_id' => $cart->billable->customer->paddle_id,
-        'items' => $items->toArray(),
-        'status' => 'ready',
-        'custom_data' => [
-            'spike_cart_id' => $cart->id,
-        ]
-    ]);
-}
