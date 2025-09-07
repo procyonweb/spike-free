@@ -17,7 +17,11 @@ class StripeWebhookController extends WebhookController
         if ($user = PaymentGateway::findBillable($payload['data']['object']['customer'])) {
             // In case this payment is for a Spike cart:
             if ($cartId = ($payload['data']['object']['metadata']['spike_cart_id'] ?? null)) {
-                $cart = Cart::forBillable($user)->find($cartId);
+                $query = config('spike.process_soft_deleted_carts') 
+                    ? Cart::withTrashed()->whereBillable($user) 
+                    : Cart::whereBillable($user);
+                
+                $cart = $query->find($cartId);
                 $cart?->markAsSuccessfullyPaid();
             }
 

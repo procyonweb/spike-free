@@ -49,7 +49,7 @@ it('handles transaction.paid event', function () {
         ]), 'items')
         ->create();
 
-    $webhookEvent = createTransactionPaidWebhookEvent($cart, ['standard' => 1]);
+    $webhookEvent = createPaddleTransactionPaidWebhookEvent($cart, ['standard' => 1]);
     $listener = new PaddleEventListener();
     $listener->handle($webhookEvent);
 
@@ -68,7 +68,7 @@ it('does not call Spike::resolve()', function () {
             'quantity' => 1
         ]), 'items')
         ->create();
-    $webhookEvent = createTransactionPaidWebhookEvent($cart, ['standard' => 1]);
+    $webhookEvent = createPaddleTransactionPaidWebhookEvent($cart, ['standard' => 1]);
     $resolveCalled = false;
     Spike::resolve(function ($request) use (&$resolveCalled) {
         $resolveCalled = true;
@@ -80,46 +80,3 @@ it('does not call Spike::resolve()', function () {
     $this->assertFalse($resolveCalled, 'Spike::resolve() should not be called');
 });
 
-function createTransactionPaidWebhookEvent(Cart $cart, array $productQuantities = []): WebhookHandled
-{
-    $currency = config('cashier.currency', 'USD');
-    $items = collect($productQuantities)
-        ->map(fn($quantity, $productId) => [
-            'price_id' => Spike::findProduct($productId)->payment_provider_price_id,
-            'quantity' => $quantity,
-        ])
-        ->filter(fn($item) => $item['quantity'] > 0)
-        ->values()
-        ->map(fn($productQuantity) => [
-            'price' => [
-                'id' => $productQuantity['price_id'],
-                'unit_price' => [
-                    'amount' => $productQuantity['unit_price'] ?? 0,
-                    'currency_code' => $currency,
-                ],
-            ],
-            'price_id' => $productQuantity['price_id'],
-            'quantity' => $productQuantity['quantity'],
-        ]);
-    $total = $items->sum(function ($item) {
-        return intval($item['price']['unit_price']['amount'] * $item['quantity']);
-    });
-
-    return createPaddleTransactionWebhookEvent('transaction.paid', [
-        'id' => 'txn_01hn2b49xz6g0zjqv5ysv229fd',
-        'billed_at' => now()->toRfc3339String(),
-        'customer_id' => $cart->billable->customer->paddle_id,
-        'items' => $items->toArray(),
-        'currency_code' => $currency,
-        'status' => 'paid',
-        'details' => [
-            'totals' => [
-                'total' => (string) $total,
-                'grand_total' => (string) $total,
-            ],
-        ],
-        'custom_data' => [
-            'spike_cart_id' => $cart->id,
-        ],
-    ]);
-}

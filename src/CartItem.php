@@ -34,7 +34,7 @@ class CartItem extends Model implements ProvideHistoryRelatableItemContract
      */
     public function cart(): BelongsTo
     {
-        return $this->belongsTo(Cart::class);
+        return $this->belongsTo(Cart::class)->withTrashed();
     }
 
     /**

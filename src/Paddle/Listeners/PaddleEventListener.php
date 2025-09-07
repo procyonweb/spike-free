@@ -67,8 +67,12 @@ class PaddleEventListener
 
         $cartId = $data['custom_data']['spike_cart_id'] ?? 0;
 
-        if ($cartId && ($cart = Cart::find($cartId))) {
-            $this->processCartFromTransactionUpdated($cart, $data);
+        if ($cartId) {
+            $query = config('spike.process_soft_deleted_carts') ? Cart::withTrashed() : Cart::query();
+            
+            if ($cart = $query->find($cartId)) {
+                $this->processCartFromTransactionUpdated($cart, $data);
+            }
         }
     }
 
