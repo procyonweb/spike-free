@@ -16,12 +16,14 @@ class VerifyCommand extends Command
 {
     protected $signature = 'spike:verify';
 
-    protected $description = 'Verify Stripe/Paddle configuration for products and subscriptions.';
+    protected $description = 'Verify Stripe/Paddle/Mollie configuration for products and subscriptions.';
 
     /** @var Collection|\Stripe\Price[] */
     protected Collection $stripePrices;
 
     protected Collection $paddlePrices;
+
+    protected Collection $molliePrices;
 
     protected string $appCurrency;
 
@@ -34,6 +36,7 @@ class VerifyCommand extends Command
         match (Spike::paymentProvider()) {
             PaymentProvider::Stripe => $this->verifyStripe(),
             PaymentProvider::Paddle => $this->verifyPaddle(),
+            PaymentProvider::Mollie => $this->verifyMollie(),
             default => throw new MissingPaymentProviderException(),
         };
 
@@ -326,6 +329,81 @@ class VerifyCommand extends Command
         }
     }
 
+    protected function verifyMollie(): void
+    {
+        $this->appCurrency = strtoupper(config('cashier.currency', 'EUR'));
+        $this->info('Fetching prices from Mollie...');
+        $this->warn('Note: Mollie verification is currently limited. Please manually verify your products and subscriptions in the Mollie dashboard.');
+
+        // Mollie doesn't have a simple "list all prices" API like Stripe/Paddle
+        // Products and subscriptions need to be verified manually or through specific API calls
+        $this->molliePrices = collect();
+
+        $billableModels = config('spike.billable_models');
+
+        foreach ($billableModels as $billableModel) {
+            $this->verifyMollieProducts($billableModel);
+            $this->verifyMollieSubscriptions($billableModel);
+        }
+    }
+
+    protected function verifyMollieProducts($billableClass): void
+    {
+        $products = Spike::products(new $billableClass);
+        $this->newLine();
+        $this->info("Verifying products for {$billableClass}...");
+        $this->warn("Mollie product verification requires manual checking in your Mollie dashboard.");
+
+        foreach ($products as $product) {
+            // Empty price ID
+            if (empty($product->payment_provider_price_id)) {
+                $this->productError($product, 'Missing price ID');
+                continue;
+            }
+
+            // Duplicate price ID
+            if (in_array($product->payment_provider_price_id, $this->priceIdsChecked)) {
+                $this->productError($product, 'Duplicate price ID');
+                continue;
+            }
+
+            // For Mollie, we can't easily verify against their API without making individual calls
+            // So we just mark it as needing manual verification
+            $this->line("· <options=bold;fg=yellow>[MANUAL]</> Product \"{$product->name}\" ({$product->payment_provider_price_id}) - Please verify in Mollie dashboard");
+            $this->priceIdsChecked[] = $product->payment_provider_price_id;
+        }
+    }
+
+    protected function verifyMollieSubscriptions($billableClass): void
+    {
+        $subscriptions = Spike::subscriptionPlans(new $billableClass);
+        $this->newLine();
+        $this->info("Verifying subscriptions for {$billableClass}...");
+        $this->warn("Mollie subscription verification requires manual checking in your Mollie dashboard.");
+
+        foreach ($subscriptions as $subscription) {
+            // Free plans don't need to be set up in Mollie
+            if ($subscription->isFree()) continue;
+
+            // Empty price ID
+            if (empty($subscription->payment_provider_price_id)) {
+                $this->subscriptionError($subscription, 'Missing price ID');
+                continue;
+            }
+
+            // Duplicate price ID
+            if (in_array($subscription->payment_provider_price_id, $this->priceIdsChecked)) {
+                $this->subscriptionError($subscription, 'Duplicate price ID');
+                continue;
+            }
+
+            // For Mollie, we can't easily verify against their API without making individual calls
+            // So we just mark it as needing manual verification
+            $this->line("· <options=bold;fg=yellow>[MANUAL]</> Subscription \"{$subscription->name}\" ({$subscription->period}, {$subscription->payment_provider_price_id}) - Please verify in Mollie dashboard");
+            $this->priceIdsChecked[] = $subscription->payment_provider_price_id;
+        }
+    }
+
     protected function productError(Product $product, string $message, string $extra = ''): void
     {
         $this->line("· <options=bold;fg=red>[ERR]</> Product \"{$product->name}\" ({$product->payment_provider_price_id}): <options=bold;fg=red>{$message}</> {$extra}");
@@ -365,8 +443,8 @@ class VerifyCommand extends Command
         foreach ($creditTypes as $creditType) {
             $allowsNegativeBalance = Credits::type($creditType)->isNegativeBalanceAllowed();
 
-            if ($allowsNegativeBalance && Spike::paymentProvider()->isPaddle()) {
-                $this->line("· <options=bold;fg=yellow>[WARN]</> Credit type \"{$creditType->type}\": This type allows for negative balance, but Paddle payment provider does not support offline charges. <options=bold;fg=yellow>Negative balances will not be paid for.</>");
+            if ($allowsNegativeBalance && (Spike::paymentProvider()->isPaddle() || Spike::paymentProvider()->isMollie())) {
+                $this->line("· <options=bold;fg=yellow>[WARN]</> Credit type \"{$creditType->type}\": This type allows for negative balance, but {Spike::paymentProvider()->name()} payment provider does not support offline charges. <options=bold;fg=yellow>Negative balances will not be paid for.</>");
                 continue;
             }
 
@@ -375,7 +453,7 @@ class VerifyCommand extends Command
                 continue;
             }
 
-            if ($allowsNegativeBalance && $creditType->priceId()) {
+            if ($allowsNegativeBalance && $creditType->priceId() && Spike::paymentProvider()->isStripe()) {
                 /** @var \Stripe\Price|null $stripePrice */
                 $stripePrice = $this->stripePrices->firstWhere('id', $creditType->priceId());
 

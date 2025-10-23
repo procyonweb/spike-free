@@ -67,8 +67,9 @@ class SpikeServiceProvider extends ServiceProvider
     {
         if (! isset(static::$_cached_payment_provider)) {
             static::$_cached_payment_provider = match (true) {
-                class_exists(\Laravel\Cashier\Cashier::class) => PaymentProvider::Stripe,
                 class_exists(\Laravel\Paddle\Cashier::class) => PaymentProvider::Paddle,
+                class_exists(\Laravel\Cashier\Order::class) => PaymentProvider::Mollie,
+                class_exists(\Laravel\Cashier\Cashier::class) => PaymentProvider::Stripe,
                 default => PaymentProvider::None,
             };
         }
@@ -90,6 +91,7 @@ class SpikeServiceProvider extends ServiceProvider
         match (static::paymentProvider()) {
             PaymentProvider::Stripe => $this->registerCashierStripe(),
             PaymentProvider::Paddle => $this->registerCashierPaddle(),
+            PaymentProvider::Mollie => $this->registerCashierMollie(),
             default => null,
         };
     }
@@ -123,6 +125,14 @@ class SpikeServiceProvider extends ServiceProvider
         \Laravel\Paddle\Cashier::useTransactionModel(PaddleTransaction::class);
     }
 
+    protected function registerCashierMollie(): void
+    {
+        $this->app->bind('spike.payment-gateway', \Opcodes\Spike\Mollie\PaymentGateway::class);
+
+        \Laravel\Cashier\Cashier::useSubscriptionModel(\Opcodes\Spike\Mollie\Subscription::class);
+        // Mollie Cashier doesn't have Customer or SubscriptionItem models like Stripe/Paddle
+    }
+
     public function boot(): void
     {
         $this->registerRoutes();
@@ -146,6 +156,7 @@ class SpikeServiceProvider extends ServiceProvider
         match (static::paymentProvider()) {
             PaymentProvider::Stripe => $this->bootCashierStripe(),
             PaymentProvider::Paddle => $this->bootCashierPaddle(),
+            PaymentProvider::Mollie => $this->bootCashierMollie(),
             default => null,
         };
 
@@ -163,6 +174,13 @@ class SpikeServiceProvider extends ServiceProvider
     {
         self::booted(function () {
             Event::listen(\Laravel\Paddle\Events\WebhookHandled::class, PaddleEventListener::class);
+        });
+    }
+
+    protected function bootCashierMollie(): void
+    {
+        self::booted(function () {
+            Event::listen(\Laravel\Cashier\Events\OrderPaymentPaid::class, \Opcodes\Spike\Mollie\Listeners\MollieWebhookListener::class);
         });
     }
 
@@ -194,6 +212,16 @@ class SpikeServiceProvider extends ServiceProvider
                 $this->loadRoutesFrom(__DIR__.'/../routes/stripe.php');
             });
         }
+
+        if (static::paymentProvider()->isMollie()) {
+            Route::group([
+                'prefix' => 'mollie',
+                'namespace' => 'Opcodes\Spike\Http\Controllers',
+                'as' => 'spike.mollie.',
+            ], function () {
+                $this->loadRoutesFrom(__DIR__.'/../routes/mollie.php');
+            });
+        }
     }
 
     protected function registerResources(): void
@@ -209,6 +237,7 @@ class SpikeServiceProvider extends ServiceProvider
                 match (static::paymentProvider()) {
                     PaymentProvider::Stripe => __DIR__.'/../database/migrations/stripe',
                     PaymentProvider::Paddle => __DIR__.'/../database/migrations/paddle',
+                    PaymentProvider::Mollie => __DIR__.'/../database/migrations/mollie',
                     default => null,
                 },
                 __DIR__.'/../database/migrations',
@@ -248,6 +277,8 @@ class SpikeServiceProvider extends ServiceProvider
                 $databaseMigrations[__DIR__.'/../database/migrations/stripe'] = $this->app->databasePath('migrations');
             } elseif (static::paymentProvider() === PaymentProvider::Paddle) {
                 $databaseMigrations[__DIR__.'/../database/migrations/paddle'] = $this->app->databasePath('migrations');
+            } elseif (static::paymentProvider() === PaymentProvider::Mollie) {
+                $databaseMigrations[__DIR__.'/../database/migrations/mollie'] = $this->app->databasePath('migrations');
             }
 
             $this->publishes($databaseMigrations, 'spike-migrations');

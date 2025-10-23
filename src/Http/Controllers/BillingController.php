@@ -21,6 +21,7 @@ class BillingController
         return match (Spike::paymentProvider()) {
             PaymentProvider::Stripe => $this->downloadStripeInvoice($request, $id),
             PaymentProvider::Paddle => $this->downloadPaddleInvoice($request, $id),
+            PaymentProvider::Mollie => $this->downloadMollieInvoice($request, $id),
             default => throw new MissingPaymentProviderException(),
         };
     }
@@ -52,5 +53,17 @@ class BillingController
 
         return response(file_get_contents($paddleInvoiceUrl))
             ->header('Content-Disposition', 'attachment; filename="' . $request->query('filename') . '.pdf"');
+    }
+
+    protected function downloadMollieInvoice(Request $request, $id)
+    {
+        $billable = Spike::resolve();
+
+        // Find the invoice by order ID using Cashier Mollie's method
+        // This will throw a 404 if not found or 403 if it doesn't belong to the user
+        $invoice = $billable->findInvoiceByOrderIdOrFail($id);
+
+        // Return the PDF download response
+        return $invoice->download($request->query('filename', $invoice->id() . '.pdf'));
     }
 }

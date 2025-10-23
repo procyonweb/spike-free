@@ -45,6 +45,12 @@ class Utils
             return \Laravel\Paddle\Cashier::formatAmount($amount, $currency ?? $defaultCurrency, $locale, $options);
         }
 
+        if ($paymentProvider === PaymentProvider::Mollie) {
+            $defaultCurrency = config('spike.currency', config('cashier.currency', 'EUR'));
+
+            return \Laravel\Cashier\Cashier::formatAmount($amount, $currency ?? $defaultCurrency, $locale, $options);
+        }
+
         return ($currency ? $currency . ' ' : '') . number_format($amount, 2);
     }
 

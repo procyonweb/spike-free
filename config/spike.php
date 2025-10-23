@@ -388,4 +388,65 @@ return [
         'allow_incomplete_subscription_updates' => false,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mollie payment gateway configuration
+    |--------------------------------------------------------------------------
+    |
+    | This section is used to configure the Mollie payment gateway only.
+    | https://spike.opcodes.io/docs/3.x/payment-providers/mollie
+    |
+    */
+
+    'mollie' => [
+
+        /*
+        |--------------------------------------------------------------------------
+        | Webhook configuration
+        |--------------------------------------------------------------------------
+        |
+        | Configure webhook handling for Mollie payment events.
+        |
+        */
+
+        'webhook' => [
+            'enabled' => true,
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Locale configuration
+        |--------------------------------------------------------------------------
+        |
+        | Default locale for Mollie payment pages.
+        | For supported Mollie locales, see:
+        | https://docs.mollie.com/reference/v2/payments-api/create-payment#parameters
+        |
+        */
+
+        'locale' => env('MOLLIE_LOCALE', 'en_US'),
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice details
+        |--------------------------------------------------------------------------
+        |
+        | Configure invoice details for Mollie orders. These will appear
+        | on orders and in customer communications.
+        |
+        */
+
+        'invoice_details' => [
+            'vendor' => 'Spike',
+            'product' => env('APP_NAME', 'Spike'),
+            // 'street' => 'Main Str. 1',
+            // 'location' => '08220 Vilnius, Lithuania',
+            // 'phone' => '+370 646 00 000',
+            // 'email' => 'info@example.com',
+            // 'url' => 'https://example.com',
+            // 'vatNumber' => 'NL123456789B01',
+        ],
+
+    ],
+
 ];

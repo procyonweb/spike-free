@@ -55,10 +55,12 @@ class SubscribeModal extends ModalComponent
         $provideDifferences = $this->getProvidableDifferences($currentPlan, $plan);
         $isStripe = Spike::paymentProvider()->isStripe();
         $isPaddle = Spike::paymentProvider()->isPaddle();
+        $isMollie = Spike::paymentProvider()->isMollie();
 
         return view('spike::livewire.subscribe-modal', [
             'isStripe' => $isStripe,
             'isPaddle' => $isPaddle,
+            'isMollie' => $isMollie,
             'paymentMethod' => $paymentMethod,
             'plan' => $plan->withPromotionCode($billable->stripePromotionCode()),
             'currentPlan' => $currentPlan,

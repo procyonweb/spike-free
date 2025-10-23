@@ -25,13 +25,14 @@
         "wire-elements/modal": "^2.0"
     },
     "require-dev": {
+        "laravel/cashier": "^15.1.1",
+        "laravel/cashier-paddle": "^2.1",
+        "mollie/laravel-cashier-mollie": "^2.18",
         "nunomaduro/collision": "^7.0|^8.0",
         "orchestra/testbench": "^8.0|^9.1|^10.0",
         "pestphp/pest": "^2.0|^3.0",
         "pestphp/pest-plugin-laravel": "^2.0|^3.0",
-        "spatie/pest-plugin-test-time": "^2.2.0",
-        "laravel/cashier": "^15.1.1",
-        "laravel/cashier-paddle": "^2.1"
+        "spatie/pest-plugin-test-time": "^2.2.0"
     },
     "autoload": {
         "psr-4": {

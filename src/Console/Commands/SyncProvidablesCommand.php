@@ -10,6 +10,7 @@ use Opcodes\Spike\Contracts\SpikeSubscriptionItem;
 use Opcodes\Spike\Facades\Spike;
 use Opcodes\Spike\Stripe\Subscription as StripeSubscription;
 use Opcodes\Spike\Paddle\Subscription as PaddleSubscription;
+use Opcodes\Spike\Mollie\Subscription as MollieSubscription;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Opcodes\Spike\Facades\PaymentGateway;
@@ -23,8 +24,8 @@ class SyncProvidablesCommand extends Command
 
     public function handle(): void
     {
-        $subscriptionId = intval($this->option('subscription'));
-        $cartId = intval($this->option('cart'));
+        $subscriptionId = (int)$this->option('subscription');
+        $cartId = (int)$this->option('cart');
 
         if (empty($subscriptionId) && empty($cartId)) {
             $this->warn('Please provide either a subscription ID or a cart ID using the --subscription or --cart options respectively.');
@@ -46,6 +47,7 @@ class SyncProvidablesCommand extends Command
         $subscription = match (PaymentGateway::provider()) {
             PaymentProvider::Stripe => StripeSubscription::find($subscriptionId),
             PaymentProvider::Paddle => PaddleSubscription::find($subscriptionId),
+            PaymentProvider::Mollie => MollieSubscription::find($subscriptionId),
             default => throw new \Exception('Payment provider is not configured. Please run `php artisan spike:install`.'),
         };
 

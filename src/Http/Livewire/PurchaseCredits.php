@@ -60,6 +60,7 @@ class PurchaseCredits extends Component
         return match (Spike::paymentProvider()) {
             PaymentProvider::Stripe => $this->checkoutStripe(),
             PaymentProvider::Paddle => $this->checkoutPaddle(),
+            PaymentProvider::Mollie => $this->checkoutMollie(),
             default => throw new MissingPaymentProviderException(),
         };
     }
@@ -76,6 +77,13 @@ class PurchaseCredits extends Component
     }
 
     protected function checkoutPaddle()
+    {
+        $this->dispatch('openModal', component: 'spike::checkout');
+
+        return null;
+    }
+
+    protected function checkoutMollie()
     {
         $this->dispatch('openModal', component: 'spike::checkout');
 

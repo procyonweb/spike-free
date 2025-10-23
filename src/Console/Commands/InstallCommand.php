@@ -39,6 +39,10 @@ class InstallCommand extends Command
             $this->line("- Paddle:");
             $this->line("  <options=bold>composer require $paddleProviderPackage</>");
             $this->newLine();
+            $mollieProviderPackage = PaymentProvider::Mollie->requiredComposerPackage();
+            $this->line("- Mollie:");
+            $this->line("  <options=bold>composer require $mollieProviderPackage</>");
+            $this->newLine();
             return Command::FAILURE;
         }
 
@@ -54,11 +58,17 @@ class InstallCommand extends Command
                 $this->line('Afterwards, please run this command again.');
             };
 
-            if ($paymentProvider === PaymentProvider::Stripe && str_contains($configContents, 'Paddle')) {
-                $printError(PaymentProvider::Stripe->name(), PaymentProvider::Paddle->name());
+            if ($paymentProvider === PaymentProvider::Stripe && (str_contains($configContents, 'Paddle') || str_contains($configContents, 'Mollie'))) {
+                $otherProvider = str_contains($configContents, 'Paddle') ? PaymentProvider::Paddle->name() : PaymentProvider::Mollie->name();
+                $printError(PaymentProvider::Stripe->name(), $otherProvider);
                 return Command::FAILURE;
-            } elseif ($paymentProvider === PaymentProvider::Paddle && str_contains($configContents, 'Stripe')) {
-                $printError(PaymentProvider::Paddle->name(), PaymentProvider::Stripe->name());
+            } elseif ($paymentProvider === PaymentProvider::Paddle && (str_contains($configContents, 'Stripe') || str_contains($configContents, 'Mollie'))) {
+                $otherProvider = str_contains($configContents, 'Stripe') ? PaymentProvider::Stripe->name() : PaymentProvider::Mollie->name();
+                $printError(PaymentProvider::Paddle->name(), $otherProvider);
+                return Command::FAILURE;
+            } elseif ($paymentProvider === PaymentProvider::Mollie && (str_contains($configContents, 'Stripe') || str_contains($configContents, 'Paddle'))) {
+                $otherProvider = str_contains($configContents, 'Stripe') ? PaymentProvider::Stripe->name() : PaymentProvider::Paddle->name();
+                $printError(PaymentProvider::Mollie->name(), $otherProvider);
                 return Command::FAILURE;
             }
         }
@@ -75,10 +85,11 @@ class InstallCommand extends Command
             $this->migrateConfigurationToTeams();
         }
 
-        // Now let's set up the Stripe's environment variables.
+        // Now let's set up the payment provider's environment variables.
         match ($paymentProvider) {
             PaymentProvider::Stripe => $this->setupStripeEnvironmentVariables(),
             PaymentProvider::Paddle => $this->setupPaddleEnvironmentVariables(),
+            PaymentProvider::Mollie => $this->setupMollieEnvironmentVariables(),
             default => throw new MissingPaymentProviderException(),
         };
 
@@ -201,6 +212,19 @@ class InstallCommand extends Command
 
             $sandbox = $this->confirm('Use Paddle in Sandbox mode?', true);
             $this->addToEnv('PADDLE_SANDBOX', $sandbox ? 'true' : 'false');
+        }
+    }
+
+    /** @noinspection LaravelFunctionsInspection */
+    private function setupMollieEnvironmentVariables(): void
+    {
+        if (empty(env('MOLLIE_KEY'))) {
+            $this->line('We could not find the Mollie <options=bold,underscore>API key</> in your project\'s configuration. Let\'s add it now.');
+            $this->line('You can find your API keys at <href=https://www.mollie.com/dashboard/developers/api-keys>https://www.mollie.com/dashboard/developers/api-keys</>');
+            $this->line('Use a <options=bold>test key</> (starts with test_) for development or a <options=bold>live key</> (starts with live_) for production.');
+
+            $mollieKey = $this->ask('Enter Mollie <options=bold,underscore>API key</> <fg=gray>(leave empty to skip)</>');
+            $this->addToEnv('MOLLIE_KEY', $mollieKey);
         }
     }
 

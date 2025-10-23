@@ -29,6 +29,7 @@ function testBillableClass(): string
 {
     return match (Spike::paymentProvider()) {
         PaymentProvider::Paddle => PaddleUser::class,
+        PaymentProvider::Mollie => \Opcodes\Spike\Tests\Fixtures\Mollie\User::class,
         default => StripeUser::class,
     };
 }
@@ -45,6 +46,9 @@ function createBillable($id = null, bool $withEvents = false)
 
     $extraAttributes = match (Spike::paymentProvider()) {
         PaymentProvider::Paddle => [],
+        PaymentProvider::Mollie => [
+            'mollie_customer_id' => 'cst_' . Str::random(14),
+        ],
         PaymentProvider::Stripe => [
             'stripe_id' => 'cus_' . Str::random(14),
         ],

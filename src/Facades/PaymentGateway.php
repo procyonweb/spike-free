@@ -53,6 +53,7 @@ class PaymentGateway extends Facade
     {
         static::swap($fake = match (Spike::paymentProvider()) {
             PaymentProvider::Paddle => new \Opcodes\Spike\Paddle\PaymentGatewayFake(),
+            PaymentProvider::Mollie => new \Opcodes\Spike\Mollie\PaymentGatewayFake(),
             default => new \Opcodes\Spike\Stripe\PaymentGatewayFake(),
         });
 
