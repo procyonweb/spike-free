@@ -49,6 +49,10 @@ use Opcodes\Spike\Stripe\Listeners\StripeWebhookListener;
 use Opcodes\Spike\Stripe\PaymentGateway as StripePaymentGateway;
 use Opcodes\Spike\Stripe\Subscription as StripeSubscription;
 use Opcodes\Spike\Stripe\SubscriptionItem as StripeSubscriptionItem;
+use Opcodes\Spike\Vat\StripeVatSync;
+use Opcodes\Spike\Vat\TaxDetermination;
+use Opcodes\Spike\Vat\VatManager;
+use Opcodes\Spike\Vat\ViesValidationService;
 use Opcodes\Spike\View\Components\Layout;
 use Opcodes\Spike\View\Components\UsageChart;
 
@@ -113,6 +117,11 @@ class SpikeServiceProvider extends ServiceProvider
         if (count($models = config('spike.billable_models')) === 1) {
             \Laravel\Cashier\Cashier::useCustomerModel($models[0]);
         }
+
+        $this->app->singleton(ViesValidationService::class);
+        $this->app->singleton(TaxDetermination::class);
+        $this->app->singleton(StripeVatSync::class);
+        $this->app->singleton(VatManager::class);
     }
 
     protected function registerCashierPaddle(): void

@@ -14,6 +14,7 @@ use Opcodes\Spike\Facades\Spike;
 use Opcodes\Spike\PaymentProvider;
 use Opcodes\Spike\SubscriptionPlan;
 use Opcodes\Spike\Traits\ScopedToBillable;
+use Opcodes\Spike\Vat\VatValidationException;
 use Stripe\Exception\InvalidRequestException;
 
 class PaymentGateway implements PaymentGatewayContract
@@ -34,10 +35,19 @@ class PaymentGateway implements PaymentGatewayContract
 
     /**
      * @throws \Laravel\Cashier\Exceptions\IncompletePayment
+     * @throws VatValidationException
      */
     public function payForCart(Cart $cart): bool
     {
         $billable = $this->getBillable();
+
+        if (config('spike.vat.enabled', false) && ! $billable->canPurchase()) {
+            throw VatValidationException::vatDetailsRequired();
+        }
+
+        if (config('spike.vat.enabled', false)) {
+            $billable->syncVatToStripe();
+        }
 
         // Validate currency consistency and determine cart currency
         $cartCurrency = $cart->validateAndDetermineCurrency();
@@ -117,11 +127,21 @@ class PaymentGateway implements PaymentGatewayContract
 
     /**
      * @throws \Laravel\Cashier\Exceptions\IncompletePayment
+     * @throws VatValidationException
      */
     public function createSubscription(SubscriptionPlan $plan, bool $requirePaymentCard = true): SpikeSubscription
     {
+        $billable = $this->getBillable();
+
+        if (config('spike.vat.enabled', false) && ! $billable->canPurchase()) {
+            throw VatValidationException::vatDetailsRequired();
+        }
+
+        if (config('spike.vat.enabled', false)) {
+            $billable->syncVatToStripe();
+        }
+
         if ($requirePaymentCard) {
-            $billable = $this->getBillable();
             $promotionCode = $billable->stripePromotionCode();
             $mandateData = Spike::mandateDataFromRequest();
 
@@ -142,7 +162,7 @@ class PaymentGateway implements PaymentGatewayContract
             return $subscription;
         }
 
-        $subscription = $this->getBillable()->subscriptions()->create([
+        $subscription = $billable->subscriptions()->create([
             'type' => self::$subscriptionName,
             'stripe_id' => '',
             'stripe_status' => 'active',

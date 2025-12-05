@@ -149,6 +149,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | VAT / Tax ID Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure VAT handling for B2B transactions. When enabled, customers
+    | must provide a billing country and VAT ID before making purchases.
+    | EU VAT IDs are validated against the VIES API.
+    |
+    | Tax rules:
+    | - Seller country (e.g., LU): Charge VAT
+    | - EU with valid VAT ID: Reverse charge (0% VAT)
+    | - Non-EU: VAT exempt (but tax ID required for invoicing)
+    |
+    */
+
+    'vat' => [
+        'enabled' => env('SPIKE_VAT_ENABLED', false),
+
+        // Seller's country code (ISO 3166-1 alpha-2)
+        'seller_country' => env('SPIKE_VAT_SELLER_COUNTRY', 'LU'),
+
+        // Seller's VAT ID (required for VIES consultation/audit trail)
+        'seller_vat_id' => env('SPIKE_VAT_SELLER_VAT_ID'),
+
+        // Cache duration for VIES validation results (seconds)
+        'vies_cache_ttl' => env('SPIKE_VIES_CACHE_TTL', 86400),
+
+        // Block purchases if VIES service is unavailable
+        'block_on_vies_unavailable' => env('SPIKE_BLOCK_ON_VIES_UNAVAILABLE', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Subscriptions
     |--------------------------------------------------------------------------
     |

@@ -8,6 +8,7 @@ use Laravel\Cashier\Checkout;
 use Opcodes\Spike\Cart;
 use Opcodes\Spike\CartItem;
 use Opcodes\Spike\Facades\Spike;
+use Opcodes\Spike\Vat\VatValidationException;
 
 class CartCheckout
 {
@@ -40,9 +41,20 @@ class CartCheckout
      * @param string|null $successUrl URL to redirect to after successful payment
      * @param string|null $cancelUrl URL to redirect to after payment is canceled
      * @return Checkout
+     * @throws VatValidationException
      */
     public function newStripeCheckout($options = [], ?string $successUrl = null, ?string $cancelUrl = null): Checkout
     {
+        $billable = $this->cart->billable;
+
+        if (config('spike.vat.enabled', false) && ! $billable->canPurchase()) {
+            throw VatValidationException::vatDetailsRequired();
+        }
+
+        if (config('spike.vat.enabled', false)) {
+            $billable->syncVatToStripe();
+        }
+
         $successUrl = $successUrl ?? $options['success_url'] ?? null;
         $cancelUrl = $cancelUrl ?? $options['cancel_url'] ?? null;
 
@@ -71,8 +83,6 @@ class CartCheckout
         } else {
             $items = $this->prepareItems();
         }
-
-        $billable = $this->cart->billable;
 
         if (Spike::stripeAllowDiscounts()) {
             $billable = $billable->allowPromotionCodes();

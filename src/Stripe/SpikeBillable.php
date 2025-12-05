@@ -10,6 +10,7 @@ use Opcodes\Spike\Traits\ManagesCredits;
 use Opcodes\Spike\Traits\ManagesPromotionCode;
 use Opcodes\Spike\Traits\ManagesPurchases;
 use Opcodes\Spike\Traits\ManagesSubscriptions;
+use Opcodes\Spike\Vat\ManagesVat;
 
 /**
  * @mixin Billable
@@ -25,6 +26,7 @@ trait SpikeBillable
     use ManagesPurchases;
     use ManagesSubscriptions;
     use ManagesPromotionCode;
+    use ManagesVat;
 
     public function spikeCacheIdentifier(): string
     {
