@@ -26,7 +26,9 @@ trait SpikeBillable
     use ManagesPurchases;
     use ManagesSubscriptions;
     use ManagesPromotionCode;
-    use ManagesVat;
+    use ManagesVat {
+        ManagesVat::stripeAddress insteadof Billable;
+    }
 
     public function spikeCacheIdentifier(): string
     {
