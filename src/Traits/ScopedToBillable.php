@@ -18,7 +18,7 @@ trait ScopedToBillable
      */
     public function billable($billable = null): static
     {
-        $self = new static;
+        $self = app(static::class);
         $self->billable = $billable;
 
         return $self;
