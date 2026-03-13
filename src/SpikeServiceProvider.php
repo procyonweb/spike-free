@@ -190,6 +190,7 @@ class SpikeServiceProvider extends ServiceProvider
     {
         self::booted(function () {
             Event::listen(\Laravel\Cashier\Events\OrderPaymentPaid::class, \Opcodes\Spike\Mollie\Listeners\MollieWebhookListener::class);
+            Event::listen(\Laravel\Cashier\Events\SubscriptionStarted::class, \Opcodes\Spike\Mollie\Listeners\MollieSubscriptionStartedListener::class);
         });
     }
 
