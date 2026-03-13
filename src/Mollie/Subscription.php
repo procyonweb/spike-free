@@ -69,12 +69,12 @@ class Subscription extends CashierSubscription implements SpikeSubscription
      */
     public function items()
     {
-        // Create a pseudo-item for compatibility with Spike's expectations
         return new Collection([
-            (object) [
-                'plan' => $this->plan,
-                'quantity' => $this->quantity ?? 1,
-            ]
+            new MollieSubscriptionItem(
+                plan: $this->plan,
+                quantity: $this->quantity ?? 1,
+                subscriptionId: $this->id,
+            ),
         ]);
     }
 

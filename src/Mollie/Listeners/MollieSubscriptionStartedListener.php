@@ -29,8 +29,10 @@ class MollieSubscriptionStartedListener
             return;
         }
 
-        app(ProvideSubscriptionPlanMonthlyProvides::class)
-            ->handle($plan, $billable);
+        foreach ($subscription->items() as $subscriptionItem) {
+            app(ProvideSubscriptionPlanMonthlyProvides::class)
+                ->handle($plan, $billable, $subscriptionItem);
+        }
 
         event(new SubscriptionActivated($billable, $subscription, $plan));
     }
