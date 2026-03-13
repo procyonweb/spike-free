@@ -34,6 +34,6 @@ class MollieSubscriptionStartedListener
                 ->handle($plan, $billable, $subscriptionItem);
         }
 
-        event(new SubscriptionActivated($billable, $subscription, $plan));
+        event(new SubscriptionActivated($billable, $plan));
     }
 }
