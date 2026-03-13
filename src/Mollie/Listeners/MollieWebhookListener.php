@@ -85,11 +85,8 @@ class MollieWebhookListener
         $subscription->cycle_started_at = now();
         $subscription->save();
 
-        // Provide monthly subscription providables
-        foreach ($subscription->items() as $subscriptionItem) {
-            app(ProvideSubscriptionPlanMonthlyProvides::class)
-                ->handle($plan, $billable, $subscriptionItem);
-        }
+        app(ProvideSubscriptionPlanMonthlyProvides::class)
+            ->handle($plan, $billable);
 
         event(new SubscriptionActivated($billable, $subscription, $plan));
     }
