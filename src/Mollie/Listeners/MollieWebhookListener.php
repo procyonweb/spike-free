@@ -65,7 +65,7 @@ class MollieWebhookListener
         }
 
         // Get the plan from the subscription
-        $planId = $subscription->items->first()?->plan;
+        $planId = $subscription->items()->first()?->plan;
 
         if (!$planId) {
             return;
@@ -86,7 +86,7 @@ class MollieWebhookListener
         $subscription->save();
 
         // Provide monthly subscription providables
-        foreach ($subscription->items as $subscriptionItem) {
+        foreach ($subscription->items() as $subscriptionItem) {
             app(ProvideSubscriptionPlanMonthlyProvides::class)
                 ->handle($plan, $billable, $subscriptionItem);
         }
