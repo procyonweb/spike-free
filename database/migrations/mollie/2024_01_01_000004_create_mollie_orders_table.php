@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('mollie_orders', function (Blueprint $table) {
             $table->id();
-            $table->morphs('billable');
+            $table->morphs('owner');
             $table->string('mollie_order_id')->unique();
             $table->string('mollie_payment_id')->nullable();
             $table->string('mollie_payment_status')->nullable();
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['billable_id', 'billable_type']);
+            $table->index(['owner_id', 'owner_type']);
         });
     }
 

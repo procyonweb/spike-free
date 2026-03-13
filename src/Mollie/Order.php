@@ -24,8 +24,8 @@ class Order extends Model
     ];
 
     protected $fillable = [
-        'billable_id',
-        'billable_type',
+        'owner_id',
+        'owner_type',
         'mollie_order_id',
         'mollie_payment_id',
         'mollie_payment_status',
@@ -38,7 +38,7 @@ class Order extends Model
     /**
      * Get the billable model related to this order.
      */
-    public function billable()
+    public function owner()
     {
         return $this->morphTo();
     }

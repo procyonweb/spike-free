@@ -46,9 +46,10 @@ class Utils
         }
 
         if ($paymentProvider === PaymentProvider::Mollie) {
-            $defaultCurrency = config('spike.currency', config('cashier.currency', 'EUR'));
+            $defaultCurrency = strtoupper($currency ?? config('spike.currency', config('cashier.currency', 'EUR')));
+            $money = new \Money\Money($amount, new \Money\Currency($defaultCurrency));
 
-            return \Laravel\Cashier\Cashier::formatAmount($amount, $currency ?? $defaultCurrency, $locale, $options);
+            return \Laravel\Cashier\Cashier::formatAmount($money);
         }
 
         return ($currency ? $currency . ' ' : '') . number_format($amount, 2);

@@ -72,7 +72,7 @@ class SpikeServiceProvider extends ServiceProvider
         if (! isset(static::$_cached_payment_provider)) {
             static::$_cached_payment_provider = match (true) {
                 class_exists(\Laravel\Paddle\Cashier::class) => PaymentProvider::Paddle,
-                class_exists(\Laravel\Cashier\Order::class) => PaymentProvider::Mollie,
+                class_exists(\Laravel\Cashier\Order\Order::class) => PaymentProvider::Mollie,
                 class_exists(\Laravel\Cashier\Cashier::class) => PaymentProvider::Stripe,
                 default => PaymentProvider::None,
             };

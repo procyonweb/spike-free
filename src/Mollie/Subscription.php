@@ -127,6 +127,11 @@ class Subscription extends CashierSubscription implements SpikeSubscription
         return $this->plan === $priceId;
     }
 
+    public function resume($resumeAt = null)
+    {
+        return parent::resume();
+    }
+
     public function stopCancelation()
     {
         return $this->resume();

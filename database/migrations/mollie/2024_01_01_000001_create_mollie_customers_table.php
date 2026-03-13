@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('mollie_customers', function (Blueprint $table) {
             $table->id();
-            $table->morphs('billable');
+            $table->morphs('owner');
             $table->string('mollie_customer_id')->unique();
             $table->string('mollie_mandate_id')->nullable();
             $table->string('card_brand')->nullable();
             $table->string('card_last_four', 4)->nullable();
             $table->timestamps();
 
-            $table->index(['billable_id', 'billable_type']);
+            $table->index(['owner_id', 'owner_type']);
         });
     }
 

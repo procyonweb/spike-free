@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('mollie_subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->morphs('billable');
+            $table->morphs('owner');
             $table->string('type');
             $table->string('mollie_subscription_id')->nullable()->unique();
             $table->string('mollie_plan');
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('promotion_code_id')->nullable();
             $table->timestamps();
 
-            $table->index(['billable_id', 'billable_type']);
+            $table->index(['owner_id', 'owner_type']);
         });
     }
 

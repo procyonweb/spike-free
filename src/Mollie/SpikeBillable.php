@@ -10,6 +10,7 @@ use Opcodes\Spike\Traits\ManagesCredits;
 use Opcodes\Spike\Traits\ManagesPromotionCode;
 use Opcodes\Spike\Traits\ManagesPurchases;
 use Opcodes\Spike\Traits\ManagesSubscriptions;
+use Opcodes\Spike\Vat\ManagesVat;
 
 /**
  * @mixin Billable|Model
@@ -20,11 +21,14 @@ use Opcodes\Spike\Traits\ManagesSubscriptions;
  */
 trait SpikeBillable
 {
-    use Billable;
-    use ManagesCredits;
+    use Billable, ManagesCredits {
+        ManagesCredits::credits insteadof Billable;
+        Billable::credits as mollieCredits;
+    }
     use ManagesPurchases;
     use ManagesSubscriptions;
     use ManagesPromotionCode;
+    use ManagesVat;
 
     public function spikeCacheIdentifier(): string
     {
@@ -36,14 +40,14 @@ trait SpikeBillable
         return $this->mollieEmail();
     }
 
-    public function orders()
+    public function spikeOrders()
     {
-        return $this->morphMany(Order::class, 'billable');
+        return $this->morphMany(Order::class, 'owner');
     }
 
     public function spikeInvoices()
     {
-        return $this->orders()
+        return $this->spikeOrders()
             ->orderBy('id', 'desc')
             ->get()
             ->map(fn($order) => new SpikeInvoice(
